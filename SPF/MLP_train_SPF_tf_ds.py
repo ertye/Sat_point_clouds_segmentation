@@ -1,11 +1,78 @@
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers, optimizers, losses
+import tensorflow.keras as keras
 import numpy as np
 from pathlib import Path
 import argparse
 
-SPF = 10  # 3,4,8,10
+import sys
+
+ # 2. TensorFlow GPU支持
+print("\n2. TensorFlow GPU支持:")
+print(f"   编译时CUDA支持: {tf.test.is_built_with_cuda()}")
+
+print("=" * 50)
+print("TensorFlow诊断信息")
+print("=" * 50)
+print(f"Python版本: {sys.version}")
+print(f"TensorFlow版本: {tf.__version__}")
+print(f"TensorFlow路径: {tf.__file__}")
+
+# 检查可用的属性
+print("\nTensorFlow模块属性:")
+tf_attrs = [attr for attr in dir(tf) if not attr.startswith('_')]
+print(f"前20个属性: {tf_attrs[:20]}")
+
+
+SPF = 3  # 3,4,8,10
+
+print("=" * 50)
+print("GPU诊断信息")
+print("=" * 50)
+
+# 1. 检查TensorFlow版本
+print(f"TensorFlow版本: {tf.__version__}")
+
+# 2. 检查Python版本
+print(f"Python版本: {sys.version}")
+
+# 3. 检查物理设备
+physical_gpus = tf.config.list_physical_devices('GPU')
+print(f"物理GPU: {physical_gpus}")
+
+# 4. 检查逻辑设备
+logical_gpus = tf.config.list_logical_devices('GPU')
+print(f"逻辑GPU: {logical_gpus}")
+
+# 5. 检查是否编译了GPU支持
+print(f"编译时GPU支持: {tf.test.is_built_with_cuda()}")
+
+# 6. 检查GPU是否可用
+print(f"GPU可用: {tf.test.is_gpu_available()}")
+
+# 7. 检查CUDA和cuDNN
+#print(f"CUDA可用: {tf.sysconfig.get_build_info()['cuda_version']}")
+#print(f"cuDNN可用: {tf.sysconfig.get_build_info()['cudnn_version']}")
+
+# 8. 列出所有可见设备
+print(f"所有可见设备: {tf.config.get_visible_devices()}")
+
+print("=" * 50)
+
+def setup_gpu():
+    gpus = tf.config.list_physical_devices('GPU')
+    
+    if gpus:
+        print(f"find {len(gpus)} GPUs")
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print("GPU has been configured and used")
+        except RuntimeError as e:
+            print(f"GPU configuration error: {e}")
+    else:
+        print("No GPU, and CPU will be used")
+
+    return len(gpus) > 0
 
 def readConfigFiles():
     """Read configuration parameters from external files"""
@@ -48,31 +115,31 @@ def read_points_from_txt(file_path):
     points = np.loadtxt(file_path, delimiter=',')
     return points
 
-def create_mlp_model(input_size, hidden_size, output_size):
+def create_mlp_model(input_size, hidden_size, output_size, alpha0=0.01):
     """Create MLP model using Keras Sequential API"""
     model = keras.Sequential()
     
     # Input layer and hidden layers
     model.add(layers.Dense(int(hidden_size/2), input_shape=(input_size,)))
-    model.add(layers.LeakyReLU(alpha=0.01))
+    model.add(layers.LeakyReLU(alpha=alpha0))
     
     model.add(layers.Dense(hidden_size))
-    model.add(layers.LeakyReLU(alpha=0.01))
+    model.add(layers.LeakyReLU(alpha=alpha0))
     
     # Multiple hidden layers with same configuration
     for _ in range(6):  # fc3 to fc8 (6 layers)
         model.add(layers.Dense(hidden_size))
-        model.add(layers.LeakyReLU(alpha=0.01))
+        model.add(layers.LeakyReLU(alpha=alpha0))
     
     # Final layers
     model.add(layers.Dense(int(hidden_size/2)))
-    model.add(layers.LeakyReLU(alpha=0.01))
+    model.add(layers.LeakyReLU(alpha=alpha0))
     
     model.add(layers.Dense(6))
-    model.add(layers.LeakyReLU(alpha=0.01))
+    model.add(layers.LeakyReLU(alpha=alpha0))
     
     model.add(layers.Dense(output_size))
-    model.add(layers.LeakyReLU(alpha=0.01))
+    model.add(layers.LeakyReLU(alpha=alpha0))
     
     return model
 
@@ -150,6 +217,8 @@ def evaluate(model, dataset, criterion):
 
 def main():   
     global SPF
+
+    has_gpu = setup_gpu()
     
     # Clear any previous TensorFlow session
     tf.keras.backend.clear_session()
