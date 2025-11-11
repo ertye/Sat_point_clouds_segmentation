@@ -3,5 +3,10 @@ This is the Sat_point_clouds_segmentation.
 
 Conda commands quick notes:
 
+conda env list
+
 conda create --name your_env_name python=3.9
+
+conda activate your_env_name
+
 
