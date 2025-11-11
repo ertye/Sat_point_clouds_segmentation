@@ -9,4 +9,9 @@ conda create --name your_env_name python=3.9
 
 conda activate your_env_name
 
+conda remove --name my_env_to_delete --all
+
+https://www.reddit.com/r/deeplearning/comments/1iush30/how_to_successfully_install_tensorflow_with_gpu/
+
+
 
