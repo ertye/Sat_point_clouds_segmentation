@@ -159,55 +159,107 @@ def create_express_ear_tcn(
     return model
 
 
+# --- Custom Callback combining complex patience and saving logic ---
 class CustomEarlyStopping(tf.keras.callbacks.Callback):
     """
-    Custom early stopping callback that replicates the original PyTorch logic
-    Combines validation loss patience and high accuracy stopping
+    Custom early stopping callback that replicates the complex PyTorch logic
+    Combines:
+    1. Validation loss complex patience
+    2. High accuracy stopping
+    3. Saving on every epoch
+    4. Saving on stop
     """
     def __init__(self, patience=5, accuracy_threshold=0.99990, model_save_prefix=""):
         super(CustomEarlyStopping, self).__init__()
-        self.patience = patience
+        
+        # Parameters from __init__
+        self.patience_max = patience
         self.accuracy_threshold = accuracy_threshold
         self.model_save_prefix = model_save_prefix
-        self.best_val_loss = float('inf')
-        self.wait = 0
-        self.stopped_epoch = 0
         
+        # Internal state variables from the 'for' loop logic
+        self.patience_i = 0
+        self.patience_diff = 0.0
+        self.patience_diff_1 = 0.0
+        self.valid_loss_old = 99999.0  # Initialize with a large number
+        self.stopped_epoch = 0
+
     def on_epoch_end(self, epoch, logs=None):
         current_val_loss = logs.get('val_loss')
         current_val_acc = logs.get('val_accuracy')
+
+        # --- 1. Complex Patience Logic ---
+        if self.valid_loss_old < current_val_loss:
+            # Loss got worse
+            self.patience_i += 1
+            self.patience_diff += current_val_loss - self.valid_loss_old
+            # Safely calculate the average deterioration
+            if self.patience_i > 0:
+                self.patience_diff_1 = self.patience_diff / self.patience_i
+            else:
+                print('Error happened in CustomEarlyStopping on_epoch_end() p1!\n')
+                self.patience_diff_1 = 0.001
+                self.patience_i=999
+        else:
+            # Loss improved or stayed same
+            self.patience_diff += current_val_loss - self.valid_loss_old
+            if self.patience_diff < 0:
+                # Accumulated deterioration has been completely offset, reset all counters
+                self.patience_diff = 0
+                self.patience_diff_1 = 0
+                self.patience_i = 0
+            else:
+                # Loss improved, but did not completely offset accumulated deterioration
+                # (Fix for potential NaN/ZeroDivisionError)
+                if self.patience_diff_1 > 0:
+                    # Recalculate how much patience is still needed
+                    self.patience_i = int(np.ceil(self.patience_diff / self.patience_diff_1))
+                    if self.patience_i > 0:
+                        self.patience_diff_1 = self.patience_diff / self.patience_i
+                    elif self.patience_i == 0:
+                        # If self.patience_i is 0, reset
+                        self.patience_diff = 0
+                        self.patience_diff_1 = 0
+                    else:
+                        # If self.patience_i < 0
+                        print('Error happened in CustomEarlyStopping on_epoch_end() p3!\n')
+                        self.patience_diff_1 = 0.001
+                        self.patience_i=999
+                else:
+                    print('Error happened in CustomEarlyStopping on_epoch_end() p2!\n')
+                    self.patience_diff_1 = 0.001
+                    self.patience_i=999
+
+        # --- 2. Check Stopping Conditions ---
         
-        # Check for high accuracy stopping condition
+        # A. High Accuracy Stop
         if current_val_acc is not None and current_val_acc > self.accuracy_threshold:
             print(f'\nEpoch {epoch+1}: 0.99990 accuracy reached - stopping training ###### ')
             self.model.stop_training = True
             self.stopped_epoch = epoch
-            # Save model when stopping due to high accuracy
             save_path = f'{self.model_save_prefix}_epoch{epoch+1}.h5'
-            print(f'Saving model to {save_path}')
+            print(f'Saving final model to {save_path}')
+            self.model.save(save_path)
+            return
+
+        # B. Complex Patience Stop
+        if self.patience_i >= self.patience_max:
+            print(f'\nEpoch {epoch+1}: Early stopping triggered (patience_max) after {self.patience_i} epochs without net improvement ###### ')
+            self.model.stop_training = True
+            self.stopped_epoch = epoch
+            save_path = f'{self.model_save_prefix}_epoch{epoch+1}.h5'
+            print(f'Saving final model to {save_path}')
             self.model.save(save_path)
             return
             
-        # Check for validation loss patience stopping
-        if current_val_loss < self.best_val_loss:
-            self.best_val_loss = current_val_loss
-            self.wait = 0
-        else:
-            self.wait += 1
-            if self.wait >= self.patience:
-                print(f'\nEpoch {epoch+1}: Early stopping triggered after {self.patience} epochs without improvement ###### ')
-                self.model.stop_training = True
-                self.stopped_epoch = epoch
-                # Save model when stopping due to patience
-                save_path = f'{self.model_save_prefix}_epoch{epoch+1}.h5'
-                print(f'Saving model to {save_path}')
-                self.model.save(save_path)
-        
-        # Save model after every epoch starting from epoch 1
+        # --- 3. Save model after every epoch (from original logic) ---
         if epoch >= 1:
             save_path = f'{self.model_save_prefix}_epoch{epoch+1}.h5'
-            # print(f'\nEpoch {epoch+1}: Saving model to {save_path}') # Optional: can be noisy
+            # print(f'\nEpoch {epoch+1}: Saving model to {save_path}') # Optional: uncomment for verbose saving
             self.model.save(save_path)
+        
+        # --- 4. Update the old loss value ---
+        self.valid_loss_old = current_val_loss
 
 class LossHistory(tf.keras.callbacks.Callback):
     """Callback to log training history to file in the original format"""
@@ -308,4 +360,5 @@ if __name__ == "__main__":
     print(f"Input sample shape: {sample.shape}")
     print(f"Prediction (raw logits): {prediction}")
     print(f"Prediction (rounded): {(prediction > 0.5).astype(int)}")
+
     print(f"Actual Label: {y_test[0].astype(int)}")
