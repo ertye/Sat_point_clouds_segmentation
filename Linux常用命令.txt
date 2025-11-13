@@ -1,0 +1,216 @@
+查看目录下各个文件夹的大小：du -h --max-depth=0 *
+
+目前电脑中的 WSL 的版本。 在 Windows 命令行窗口，输入指令： wsl --list --verbose (或者输入简化版本： wsl -l -v )
+ wsl --shutdown
+
+conda create --name PointNet1and2Pytorch python=3.8
+conda remove --name PointNet1and2Pytorch --all
+conda rename -n old_name  new_name 
+conda activate new_name
+
+conda clean --packages
+conda clean --all
+
+
+
+删除当前目录下所有叫 xxxxxx 的文件
+find ./ -type f -name "partHydroRr_*.txt" -exec rm -f {} \;
+
+find ./ -type f -name "AllFeatures_allClass_testData_withHeight.txt" -exec rm -f {} \;
+
+find ./ -type f -name "AllFeatures4_allClass_testData_rbs_Prediction.txt"
+
+
+find . -type f -name "*016.png" -exec cp {} /mnt/d/Master\ of\ Geomatics/MasterThesis/20250131_presentation/PaperPics/Chapter5/ \;
+
+windows power shell的相同命令：
+Get-ChildItem -Path ".\" -Recurse -File -Filter "CNF_allClass_testData.txt" | Remove-Item
+
+
+
+(growsp) zdy@DESKTOP-5RI1DEH:/mnt/g/PointCloudSegmentation$ python --version
+Python 3.8.19
+(growsp) zdy@DESKTOP-5RI1DEH:/mnt/g/PointCloudSegmentation$ conda list
+# packages in environment at /home/zdy/anaconda3/envs/growsp:
+
+
+pip cache purge
+
+查看已安装的包conda list | grep cuda
+在conda env下conda install cudatoolkit=11.8.0
+
+
+查看cuda toolkit的版本
+nvcc --version
+nvidia-smi
+
+查看环境变量
+echo $PATH
+echo ${CONDA_PREFIX}
+
+编辑环境变量
+gedit ~/.bashrc
+source ~/.bashrc
+
+conda install -c conda-forge/label/gcc7 qhull
+conda install -c conda-forge -c davidcaron pclpy
+
+
+ 1296  git clone https://github.com/NVIDIA/MinkowskiEngine.git
+ 1297  cd MinkowskiEngine
+ 1298  python setup.py install --blas=openblas
+ 1299  pip search cudatoolkit
+ 1300  conda search cudatoolkit
+ 1301  pip list
+ 1302  pip list | grep cuda
+ 1303  conda deactivate
+ 1304  ls
+ 1305  cd ../../../
+ 1306  cd GrowSP-main/
+ 1307  ls
+ 1308  history -20
+ 1309  history 20
+ 
+ conda search cudatoolkit
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+# 假设您已进入项目文件夹 E:\codingWhileLearning\myRTKlib
+
+# 假设您已进入项目文件夹 E:\codingWhileLearning\myRTKlib
+
+# 1. 初始化 Git 仓库
+git init
+
+# 2. 将所有文件添加到暂存区
+git add .
+# 提示的 LF/CRLF 警告是正常的，可以忽略。
+
+# 3. 提交更改，创建第一个版本
+git commit -m "update"
+# 此时您的本地分支通常是 'master' (root-commit)
+
+# 4. 关联远程仓库地址
+git remote add origin https://github.com/ertye/myRTKlib.git
+
+# 5. 将本地分支重命名为 'main'
+git branch -M main
+or
+git branch -M withPrintf
+
+# 6. 拉取远程内容并变基 (Rebase)
+# 这一步会提示您进行认证（输入 PAT），请务必成功认证。
+git pull origin main --rebase
+or
+git pull origin withPrintf --rebase
+
+# 7. 强制推送并建立跟踪关系
+# 这一步通常不需要再次认证，因为上一步已经通过认证。
+git push -u origin main -f
+or
+git push -u origin withPrintf -f
+
+
+git add .
+git commit -m "update printf 20251102"
+
+git push
+or
+git push origin withPrintf
+
+
+
+
+当协作的同事（其他人）在远程仓库（例如 GitHub）上修改并推送了代码后，您需要执行 **拉取（Pull）** 操作来同步这些更改，将最新的代码更新到您的本地分支。
+
+有两种主要的更新方式：**合并 (Merge)** 和 **变基 (Rebase)**。
+
+-----
+
+## 方式一：合并 (Merge) —— 保留历史记录
+
+这是最直接、最常用的方法。它将远程的更改和您的本地更改合并，并生成一个特殊的 **合并提交 (Merge Commit)**。
+
+### 命令：`git pull`
+
+```bash
+# 确保您在要更新的本地分支上 (例如 main)
+git checkout main
+
+# 执行拉取操作 (等同于 git fetch + git merge)
+git pull origin main
+```
+
+**效果：**
+
+1.  Git 会从远程仓库 `origin` 获取 `main` 分支的最新数据。
+2.  Git 会尝试将远程的最新提交与您本地的提交进行合并。
+3.  如果合并成功，将生成一个新的 **Merge Commit**。您的 Git 历史记录会显示两条分支线汇合。
+
+-----
+
+## 方式二：变基 (Rebase) —— 保持历史记录线性
+
+变基是一种“清理”历史记录的方法。它将您的本地提交暂时“拿走”，更新远程的最新提交，然后将您的本地提交重新应用（放在）在远程提交的**后面**。这样可以保持 Git 历史记录的整洁和线性。
+
+### 命令：`git pull --rebase`
+
+```bash
+# 确保您在要更新的本地分支上
+git checkout main
+
+# 执行拉取并变基操作
+git pull origin main --rebase
+```
+
+**效果：**
+
+1.  Git 获取远程最新提交。
+2.  Git 将您的本地提交临时保存。
+3.  将远程提交作为新的起点。
+4.  将您的本地提交一个个重新应用到新的起点上。
+5.  **不会**产生 Merge Commit，历史记录看起来就像是您一直基于最新代码进行开发。
+
+-----
+
+## 发生冲突 (Conflict) 时的处理
+
+无论您使用 `git pull` 还是 `git pull --rebase`，如果您的本地修改和远程的修改在同一个文件的同一部分，就会发生冲突。
+
+### 冲突解决步骤：
+
+1.  **Git 暂停：** 命令行会提示您发生冲突，并列出冲突的文件。
+2.  **手动解决冲突：**
+      * 使用代码编辑器打开冲突文件。
+      * 查找文件中类似 `<<<<<<<`, `=======`, `>>>>>>>` 的标记。
+      * 手动修改文件内容，选择您想保留的代码（通常是合并您和同事的代码），并删除这些标记。
+3.  **标记为已解决：**
+    ```bash
+    git add .
+    ```
+4.  **继续操作：**
+      * **如果您使用的是 `git pull` (Merge)：**
+        ```bash
+        git commit -m "Merge remote-tracking branch 'origin/main'" 
+        # 默认的提交信息即可
+        ```
+      * **如果您使用的是 `git pull --rebase` (Rebase)：**
+        ```bash
+        git rebase --continue
+        ```
+
+完成这些步骤后，您的本地分支就会是最新的代码。
